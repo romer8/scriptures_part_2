@@ -7,10 +7,10 @@
  *              IS 542, Winter 2019, BYU.
  */
 /*property
-    books, bookChapterValid, forEach, fullName, getElementById, gridName, hash, id, init,
-    innerHTML, length, log, maxBookId, minBookId, onHashChanged, onerror,
-    onload, open, parse, push, responseText, send, slice, split, status,
-    substring
+    books, forEach, fullName, getElementById, gridName, hash, id, init,
+    innerHTML, length, maxBookId, minBookId, numChapters, onHashChanged,
+    onerror, onload, open, parentBookId, parse, push, responseText, send, slice,
+    split, status, substring
 */
 /*global console */
 /*jslint
@@ -69,6 +69,16 @@ const Scriptures = (function () {
     };
 
     bookChapterValid = function (bookId, chapter) {
+        let book = books[bookId];
+
+        if (book === undefined || chapter < 0 || chapter > book.numChapters) {
+            return false;
+        }
+
+        if (chapter === 0 && book.numChapters > 0) {
+            return false;
+        }
+
         return true;
     };
 
@@ -145,7 +155,7 @@ const Scriptures = (function () {
             let volume = volumes[book.parentBookId - 1];
 
             // ajax(
-            document.getElementById("scriptures").innerHTML = "<div>Chapter " + chapter + "</div>";
+            document.getElementById("scriptures").innerHTML = "<div>Chapter " + chapter + " " + volume + "</div>";
         }
     };
 
