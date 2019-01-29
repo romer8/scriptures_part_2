@@ -7,7 +7,7 @@
  *              IS 542, Winter 2019, BYU.
  */
 /*property
-    books, forEach, fullName, getElementById, gridName, hash, id, init,
+    books, bookChapterValid, forEach, fullName, getElementById, gridName, hash, id, init,
     innerHTML, length, log, maxBookId, minBookId, onHashChanged, onerror,
     onload, open, parse, push, responseText, send, slice, split, status,
     substring
@@ -34,10 +34,11 @@ const Scriptures = (function () {
      *                      PRIVATE METHOD DECLARATIONS
      */
     let ajax;
+    let bookChapterValid;
     let cacheBooks;
     let init;
     let navigateBook;
-    let navigateBookChapter;
+    let navigateChapter;
     let navigateHome;
     let onHashChanged;
 
@@ -65,6 +66,10 @@ const Scriptures = (function () {
 
         request.onerror = failureCallback;
         request.send();
+    };
+
+    bookChapterValid = function (bookId, chapter) {
+        return true;
     };
 
     cacheBooks = function (callback) {
@@ -108,11 +113,40 @@ const Scriptures = (function () {
     };
 
     navigateBook = function (bookId) {
-        console.log("book " + bookId);
+        document.getElementById("scriptures").innerHTML = "<div>" + bookId + "</div>";
+
+        /*
+         * NEEDSWORK: generate HTML that looks like this (to use Liddle's styles.css):
+         *
+         * <div id="scripnav">
+         *     <div class="volume"><h5>book.fullName</h5></div>
+         *     <a class="btn chapter" id="1" href="#0:bookId:1">1</a>
+         *     <a class="btn chapter" id="2" href="#0:bookId:2">2</a>
+         *     ...
+         *     <a class="btn chapter" id="49" href="#0:bookId:49">49</a>
+         *     <a class="btn chapter" id="50" href="#0:bookId:50">50</a>
+         * </div>
+         *
+         * (plug in the right strings for book.fullName and bookId in the example above)
+         *
+         * Logic for this method:
+         * 1. Get the book for the given bookId.
+         * 2. If the book has no numbered chapters, call navigateChapter() for
+         *    that book ID and chapter 0.
+         * 3. Else if the book has exactly one chapter, call navigateChapter() for
+         *    that book ID and chapter 1.
+         * 4. Else generate the HTML to match the example above.
+         */
     };
 
-    navigateBookChapter = function (bookId, chapter) {
-        console.log("book chapter" + bookId + ", " + chapter);
+    navigateChapter = function (bookId, chapter) {
+        if (bookId !== undefined) {
+            let book = books[bookId];
+            let volume = volumes[book.parentBookId - 1];
+
+            // ajax(
+            document.getElementById("scriptures").innerHTML = "<div>Chapter " + chapter + "</div>";
+        }
     };
 
     navigateHome = function (volumeId) {
@@ -154,29 +188,25 @@ const Scriptures = (function () {
             } else {
                 navigateHome(volumeId);
             }
-        } else if (ids.length === 2) {
+        } else if (ids.length >= 2) {
             let bookId = Number(ids[1]);
 
             if (books[bookId] === undefined) {
                 navigateHome();
             } else {
-                navigateBook(bookId);
-            }
-        } else {
-            navigateBookChapter();
-        }
+                if (ids.length === 2) {
+                    navigateBook(bookId);
+                } else {
+                    let chapter = Number(ids[2]);
 
-        /*
-         Check the hash to see if it’s empty; if so, navigate to the “home” state
-         Trim the leading “#” and then split the hash based on colons (“:”)
-         If we have one ID, it’s a volume, so navigate to that volume
-             But if the volume ID is < 1 or > 5, it’s invalid, so navigate to “home”
-         If we have two ID’s, it’s a volume and book, so navigate to that book’s list of chapters
-             But if the volume or book ID is invalid, navigate “home”
-             If the book doesn’t have chapters, navigate to its content directly
-         If we have three ID’s, its volume, book, chapter, so navigate there if valid
-             If invalid, navigate “home”
-         */
+                    if (bookChapterValid(bookId, chapter)) {
+                        navigateChapter(bookId, chapter);
+                    } else {
+                        navigateHome();
+                    }
+                }
+            }
+        }
     };
 
     /*------------------------------------------------------------------------
