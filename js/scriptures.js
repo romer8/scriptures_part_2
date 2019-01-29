@@ -7,9 +7,10 @@
  *              IS 542, Winter 2019, BYU.
  */
 /*property
-    books, forEach, getElementById, hash, id, init, innerHTML, length, log,
-    maxBookId, minBookId, onHashChanged, onerror, onload, open, parse, push,
-    responseText, send, slice, split, status, substring
+    books, forEach, fullName, getElementById, gridName, hash, id, init,
+    innerHTML, length, log, maxBookId, minBookId, onHashChanged, onerror,
+    onload, open, parse, push, responseText, send, slice, split, status,
+    substring
 */
 /*global console */
 /*jslint
@@ -115,9 +116,25 @@ const Scriptures = (function () {
     };
 
     navigateHome = function (volumeId) {
-        document.getElementById("scriptures").innerHTML =
-                "<div>The Old Testament</div><div>The New Testament</div><div>The Book of Mormon</div" +
-                "<div>Doctrine and Covenants</div><div>The Pearl of Great Price</div>" + volumeId;
+        let navContents = "<div id=\"scripnav\">";
+
+        volumes.forEach(function (volume) {
+            if (volumeId === undefined || volumeId === volume.id) {
+                navContents += "<div class=\"volume\"><a name=\"v" + volume.id + "\"/><h5>" +
+                        volume.fullName + "</h5></div><div class=\"books\">";
+
+                volume.books.forEach(function (book) {
+                    navContents += "<a class=\"btn\" id\"" + book.id + "\" href=\"#" +
+                            volume.id + ":" + book.id + "\">" + book.gridName + "</a>";
+                });
+
+                navContents += "</div>";
+            }
+        });
+
+        navContents += "<br /><br /></div>";
+
+        document.getElementById("scriptures").innerHTML = navContents;
     };
 
     onHashChanged = function () {
