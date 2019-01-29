@@ -48,8 +48,10 @@
         }
 
         ready(function () {
-            Scriptures.init(function () { console.log("Initialized"); });
-            window.addEventListener("hashchange", Scriptures.onHashChanged);
+            Scriptures.init(function () {
+                window.addEventListener("hashchange", Scriptures.onHashChanged);
+                Scriptures.onHashChanged();
+            });
         });
     </script>
 </body>

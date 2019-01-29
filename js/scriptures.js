@@ -8,9 +8,9 @@
  */
 /*property
     books, forEach, fullName, getElementById, gridName, hash, id, init,
-    innerHTML, length, maxBookId, minBookId, numChapters, onHashChanged,
-    onerror, onload, open, parentBookId, parse, push, responseText, send, slice,
-    split, status, substring
+    innerHTML, length, log, maxBookId, minBookId, numChapters, onHashChanged,
+    onerror, onload, open, parse, push, responseText, send, slice, split,
+    status, substring
 */
 /*global console */
 /*jslint
@@ -18,11 +18,10 @@
     long: true */
 
 const Scriptures = (function () {
-    "use strict";
-
     /*------------------------------------------------------------------------
      *                      CONSTANTS
      */
+    const SCRIPTURES_URL = "https://scriptures.byu.edu/mapscrip/mapgetscrip.php";
 
     /*------------------------------------------------------------------------
      *                      PRIVATE VARIABLES
@@ -36,6 +35,9 @@ const Scriptures = (function () {
     let ajax;
     let bookChapterValid;
     let cacheBooks;
+    let encodedScriptureUrlParameters;
+    let getScriptureCallback;
+    let getScriptureFailed;
     let init;
     let navigateBook;
     let navigateChapter;
@@ -45,14 +47,20 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------------
      *                      PRIVATE METHODS
      */
-    ajax = function (url, successCallback, failureCallback) {
+    ajax = function (url, successCallback, failureCallback, skipParse) {
         let request = new XMLHttpRequest();
 
         request.open("GET", url, true);
 
         request.onload = function () {
             if (request.status >= 200 && request.status < 400) {
-                let data = JSON.parse(request.responseText);
+                let data;
+
+                if (skipParse) {
+                    data = request.responseText;
+                } else {
+                    data = JSON.parse(request.responseText);
+                }
 
                 if (typeof successCallback === "function") {
                     successCallback(data);
@@ -98,6 +106,31 @@ const Scriptures = (function () {
         if (typeof callback === "function") {
             callback();
         }
+    };
+
+    encodedScriptureUrlParameters = function (bookId, chapter, verses, isJst) {
+        if (bookId !== undefined && chapter !== undefined) {
+            let options = "";
+
+            if (verses !== undefined) {
+                options += verses;
+            }
+
+            if (isJst !== undefined && isJst) {
+                options += "&jst=JST";
+            }
+
+            return SCRIPTURES_URL + "?book=" + bookId + "&chap=" + chapter + "&verses" + options;
+        }
+    };
+
+    getScriptureCallback = function (chapterHtml) {
+        document.getElementById("scriptures").innerHTML = chapterHtml;
+        // NEEDSWORK: set up the map markers
+    };
+
+    getScriptureFailed = function () {
+        console.log("Warning: unable to receive scripture content from server.");
     };
 
     init = function (callback) {
@@ -151,11 +184,10 @@ const Scriptures = (function () {
 
     navigateChapter = function (bookId, chapter) {
         if (bookId !== undefined) {
-            let book = books[bookId];
-            let volume = volumes[book.parentBookId - 1];
+            // let book = books[bookId];
+            // let volume = volumes[book.parentBookId - 1];
 
-            // ajax(
-            document.getElementById("scriptures").innerHTML = "<div>Chapter " + chapter + " " + volume + "</div>";
+            ajax(encodedScriptureUrlParameters(bookId, chapter), getScriptureCallback, getScriptureFailed, true);
         }
     };
 
@@ -165,11 +197,11 @@ const Scriptures = (function () {
         volumes.forEach(function (volume) {
             if (volumeId === undefined || volumeId === volume.id) {
                 navContents += "<div class=\"volume\"><a name=\"v" + volume.id + "\"/><h5>" +
-                        volume.fullName + "</h5></div><div class=\"books\">";
+                volume.fullName + "</h5></div><div class=\"books\">";
 
                 volume.books.forEach(function (book) {
                     navContents += "<a class=\"btn\" id\"" + book.id + "\" href=\"#" +
-                            volume.id + ":" + book.id + "\">" + book.gridName + "</a>";
+                    volume.id + ":" + book.id + "\">" + book.gridName + "</a>";
                 });
 
                 navContents += "</div>";
