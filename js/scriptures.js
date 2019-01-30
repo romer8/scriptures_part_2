@@ -42,7 +42,10 @@ const Scriptures = (function () {
     let navigateBook;
     let navigateChapter;
     let navigateHome;
+    let nextChapter;
     let onHashChanged;
+    let previousChapter;
+    let titleForBookChapter;
 
     /*------------------------------------------------------------------------
      *                      PRIVATE METHODS
@@ -184,8 +187,7 @@ const Scriptures = (function () {
 
     navigateChapter = function (bookId, chapter) {
         if (bookId !== undefined) {
-            // let book = books[bookId];
-            // let volume = volumes[book.parentBookId - 1];
+            console.log(nextChapter(bookId, chapter));
 
             ajax(encodedScriptureUrlParameters(bookId, chapter), getScriptureCallback, getScriptureFailed, true);
         }
@@ -211,6 +213,35 @@ const Scriptures = (function () {
         navContents += "<br /><br /></div>";
 
         document.getElementById("scriptures").innerHTML = navContents;
+    };
+
+    // Book ID and chapter must be integers
+    // Returns undefined if there is no next chapter
+    // Otherwise returns an array with the next book ID, chapter, and title
+    nextChapter = function (bookId, chapter) {
+        let book = books[bookId];
+
+        if (book !== undefined) {
+            if (chapter < book.numChapters) {
+                return [bookId, chapter + 1, titleForBookChapter(book, chapter + 1)];
+            }
+
+            let nextBook = books[bookId + 1];
+
+            if (nextBook !== undefined) {
+                let nextChapterValue = 0;
+
+                if (nextBook.numChapters > 0) {
+                    nextChapterValue = 1;
+                }
+
+                return [
+                    nextBook.id,
+                    nextChapterValue,
+                    titleForBookChapter(nextBook, nextChapterValue)
+                ];
+            }
+        }
     };
 
     onHashChanged = function () {
@@ -249,6 +280,32 @@ const Scriptures = (function () {
                 }
             }
         }
+    };
+
+    // Book ID and chapter must be integers
+    // Returns undefined if there is no previous chapter
+    // Otherwise returns an array with the next book ID, chapter, and title
+    previousChapter = function (bookId, chapter) {
+        /*
+         * Get the book for the given bookId.  If it's not undefined:
+         *      If chapter > 1, it's the easy case.  Just return same bookId,
+         *          chapter - 1, and the title string for that book/chapter combo.
+         *      Otherwise we need to see if there's a previous book:
+         *          Get the book for bookId - 1.  If it's not undefined:
+         *              Return bookId - 1, the last chapter of that book, and the
+         *                      title string for that book/chapter combo.
+         * If we didn't already return a 3-element array of bookId/chapter/title,
+         *      at this point just drop through to the bottom of the function.  We'll
+         *      return undefined by default, meaning there is no previous chapter.
+         */
+    };
+
+    titleForBookChapter = function (book, chapter) {
+        if (chapter > 0) {
+            return book.tocName + " " + chapter;
+        }
+
+        return book.tocName;
     };
 
     /*------------------------------------------------------------------------
