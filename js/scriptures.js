@@ -10,7 +10,7 @@
     books, forEach, fullName, getElementById, gridName, hash, id, init,
     innerHTML, length, log, maxBookId, minBookId, numChapters, onHashChanged,
     onerror, onload, open, parse, push, responseText, send, slice, split,
-    status, substring
+    status, substring, tocName
 */
 /*global console */
 /*jslint
@@ -21,20 +21,24 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------------
      *                      CONSTANTS
      */
+    const LAT_LON_PARSER = /\((.*),'(.*)',(.*),(.*),(.*),(.*),(.*),(.*),(.*),(.*),'(.*)'\)/;
     const SCRIPTURES_URL = "https://scriptures.byu.edu/mapscrip/mapgetscrip.php";
 
     /*------------------------------------------------------------------------
      *                      PRIVATE VARIABLES
      */
     let books;
+    let gmMarkers = [];
     let volumes;
 
     /*------------------------------------------------------------------------
      *                      PRIVATE METHOD DECLARATIONS
      */
+    let addMarker;
     let ajax;
     let bookChapterValid;
     let cacheBooks;
+    let clearMarkers;
     let encodedScriptureUrlParameters;
     let getScriptureCallback;
     let getScriptureFailed;
@@ -45,11 +49,18 @@ const Scriptures = (function () {
     let nextChapter;
     let onHashChanged;
     let previousChapter;
+    let setupMarkers;
     let titleForBookChapter;
 
     /*------------------------------------------------------------------------
      *                      PRIVATE METHODS
      */
+    addMarker = function (placename, latitude, longitude) {
+        // NEEDSWORK: check to see if we already have this latitude/longitude
+        //   in the gmMarkers array; if so, merge this new placename
+        // NEEDSWORK: create the marker and append it to gmMarkers
+    };
+
     ajax = function (url, successCallback, failureCallback, skipParse) {
         let request = new XMLHttpRequest();
 
@@ -111,6 +122,14 @@ const Scriptures = (function () {
         }
     };
 
+    clearMarkers = function () {
+        gmMarkers.forEach(function (marker) {
+            marker.setMap(null);
+        });
+
+        gmMarkers = [];
+    };
+
     encodedScriptureUrlParameters = function (bookId, chapter, verses, isJst) {
         if (bookId !== undefined && chapter !== undefined) {
             let options = "";
@@ -129,7 +148,7 @@ const Scriptures = (function () {
 
     getScriptureCallback = function (chapterHtml) {
         document.getElementById("scriptures").innerHTML = chapterHtml;
-        // NEEDSWORK: set up the map markers
+        setupMarkers();
     };
 
     getScriptureFailed = function () {
@@ -188,6 +207,7 @@ const Scriptures = (function () {
     navigateChapter = function (bookId, chapter) {
         if (bookId !== undefined) {
             console.log(nextChapter(bookId, chapter));
+            console.log(previousChapter(bookId, chapter));
 
             ajax(encodedScriptureUrlParameters(bookId, chapter), getScriptureCallback, getScriptureFailed, true);
         }
@@ -298,6 +318,31 @@ const Scriptures = (function () {
          *      at this point just drop through to the bottom of the function.  We'll
          *      return undefined by default, meaning there is no previous chapter.
          */
+        console.log(bookId, chapter);
+    };
+
+    setupMarkers = function () {
+        if (gmMarkers.length > 0) {
+            clearMarkers();
+        }
+
+        document.querySelectorAll("a[onclick^=\"showLocation(\"]")
+            .forEach(function (element) {
+                let matches = LAT_LON_PARSER.exec(element.getAttribute("onclick"));
+
+                if (matches) {
+                    let placename = matches[2];
+                    let latitude = matches[3];
+                    let longitude = matches[4];
+                    let flag = matches[11];
+
+                    if (flag !== "") {
+                        placename += " " + flag;
+                    }
+
+                    addMarker(placename, latitude, longitude);
+                }
+            });
     };
 
     titleForBookChapter = function (book, chapter) {
