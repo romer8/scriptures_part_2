@@ -7,12 +7,13 @@
  *              IS 542, Winter 2019, BYU.
  */
 /*property
-    Animation, DROP, Marker, animation, books, classKey, clearTimeout, content,
-    exec, forEach, fullName, getAttribute, getElementById, google, gridName,
-    hash, href, id, init, innerHTML, lat, length, lng, log, map, maps,
-    maxBookId, minBookId, numChapters, onHashChanged, onerror, onload, open,
-    parse, position, push, querySelectorAll, responseText, send, setMap,
-    setTimeout, slice, split, status, substring, title, tocName
+    Animation, DROP, Marker, animation, books, changeHash, classKey,
+    clearTimeout, content, exec, forEach, fullName, getAttribute,
+    getElementById, google, gridName, hash, href, id, init, innerHTML, lat,
+    length, lng, log, map, maps, maxBookId, minBookId, numChapters,
+    onHashChanged, onerror, onload, open, parentBookId, parse, position, push,
+    querySelectorAll, responseText, send, setMap, setTimeout, slice, split,
+    status, substring, title, tocName
 */
 /*global console, google, map */
 /*jslint
@@ -26,6 +27,8 @@ const Scriptures = (function () {
     const BOTTOM_PADDING = "<br /><br />";
     const CLASS_BOOKS = "books";
     const CLASS_VOLUME = "volume";
+    const DIV_BREADCRUMBS = "crumbs";
+    const DIV_SCRIPTURES_NAVIGATOR = "scripnav";
     const DIV_SCRIPTURES = "scriptures";
     const INDEX_PLACENAME = 2;
     const INDEX_LATITUDE = 3;
@@ -36,6 +39,10 @@ const Scriptures = (function () {
     const REQUEST_GET = "GET";
     const REQUEST_STATUS_OK = 200;
     const REQUEST_STATUS_ERROR = 400;
+    const TAG_HEADER5 = "h5";
+    const TAG_LIST_ITEM = "li";
+    const TAG_UNORDERED_LIST = "ul";
+    const TEXT_TOP_LEVEL = "The Scriptures";
     const URL_BOOKS = "https://scriptures.byu.edu/mapscrip/model/books.php";
     const URL_SCRIPTURES = "https://scriptures.byu.edu/mapscrip/mapgetscrip.php";
     const URL_VOLUMES = "https://scriptures.byu.edu/mapscrip/model/volumes.php";
@@ -45,6 +52,7 @@ const Scriptures = (function () {
      */
     let books;
     let gmMarkers = [];
+    let requestedBreadcrumbs;
     let retryDelay = 500;
     let volumes;
 
@@ -56,14 +64,17 @@ const Scriptures = (function () {
     let bookChapterValid;
     let booksGrid;
     let booksGridContent;
+    let breadcrumbs;
     let cacheBooks;
+    let changeHash;
     let clearMarkers;
     let encodedScriptureUrlParameters;
     let getScriptureCallback;
     let getScriptureFailed;
     let htmlAnchor;
     let htmlDiv;
-    let htmlHeader5;
+    let htmlElement;
+    let htmlHashLink;
     let htmlLink;
     let init;
     let navigateBook;
@@ -74,6 +85,7 @@ const Scriptures = (function () {
     let previousChapter;
     let setupMarkers;
     let titleForBookChapter;
+    let volumeForId;
     let volumesGridContent;
 
     /*------------------------------------------------------------------------
@@ -158,6 +170,31 @@ const Scriptures = (function () {
         return gridContent;
     };
 
+    breadcrumbs = function (volume, book, chapter) {
+        let crumbs;
+
+        if (volume === undefined) {
+            crumbs = htmlElement(TAG_LIST_ITEM, TEXT_TOP_LEVEL);
+        } else {
+            crumbs = htmlElement(TAG_LIST_ITEM, htmlHashLink("", TEXT_TOP_LEVEL));
+
+            if (book === undefined) {
+                crumbs += htmlElement(TAG_LIST_ITEM, volume.fullName);
+            } else {
+                crumbs += htmlElement(TAG_LIST_ITEM, htmlHashLink(`${volume.id}`, volume.fullName));
+
+                if (chapter === undefined || chapter <= 0) {
+                    crumbs += htmlElement(TAG_LIST_ITEM, book.tocName);
+                } else {
+                    crumbs += htmlElement(TAG_LIST_ITEM, htmlHashLink(`${volume.id},${book.id}`, book.tocName));
+                    crumbs += htmlElement(TAG_LIST_ITEM, chapter);
+                }
+            }
+        }
+
+        return htmlElement(TAG_UNORDERED_LIST, crumbs);
+    };
+
     cacheBooks = function (callback) {
         volumes.forEach(function (volume) {
             let volumeBooks = [];
@@ -174,6 +211,24 @@ const Scriptures = (function () {
         if (typeof callback === "function") {
             callback();
         }
+    };
+
+    changeHash = function (volumeId, bookId, chapter) {
+        let newHash = "";
+
+        if (volumeId !== undefined) {
+            newHash += volumeId;
+
+            if (bookId !== undefined) {
+                newHash += `:${bookId}`;
+
+                if (chapter !== undefined) {
+                    newHash += `:${chapter}`;
+                }
+            }
+        }
+
+        location.hash = newHash;
     };
 
     clearMarkers = function () {
@@ -202,6 +257,7 @@ const Scriptures = (function () {
 
     getScriptureCallback = function (chapterHtml) {
         document.getElementById(DIV_SCRIPTURES).innerHTML = chapterHtml;
+        document.getElementById(DIV_BREADCRUMBS).innerHTML = requestedBreadcrumbs;
         setupMarkers();
     };
 
@@ -233,12 +289,8 @@ const Scriptures = (function () {
         return `<div${idString}${classString}>${contentString}</div>`;
     };
 
-    htmlHeader5 = function (content) {
-        if (content === undefined) {
-            content = "";
-        }
-
-        return `<h5>${content}</h5>`;
+    htmlElement = function (tagName, content) {
+        return `<${tagName}>${content}</${tagName}>`;
     };
 
     htmlLink = function (parameters) {
@@ -266,6 +318,10 @@ const Scriptures = (function () {
         return `<a${idString}${classString}${hrefString}>${contentString}</a>`;
     };
 
+    htmlHashLink = function (hashArguments, content) {
+        return `<a href="javascript:void(0)" onclick="Scriptures.changeHash(${hashArguments})">${content}</a>`;
+    };
+
     init = function (callback) {
         let booksLoaded = false;
         let volumesLoaded = false;
@@ -289,7 +345,15 @@ const Scriptures = (function () {
     };
 
     navigateBook = function (bookId) {
+        let book = books[bookId];
+        let volume;
+
+        if (book !== undefined) {
+            volume = volumeForId(book.parentBookId);
+        }
+
         document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({content: bookId});
+        document.getElementById(DIV_BREADCRUMBS).innerHTML = breadcrumbs(volume, book);
 
         /*
          * NEEDSWORK: generate HTML that looks like this (to use Liddle's styles.css):
@@ -317,6 +381,11 @@ const Scriptures = (function () {
 
     navigateChapter = function (bookId, chapter) {
         if (bookId !== undefined) {
+            let book = books[bookId];
+            let volume = volumes[book.parentBookId - 1];
+
+            requestedBreadcrumbs = breadcrumbs(volume, book, chapter);
+
             console.log(nextChapter(bookId, chapter));
             console.log(previousChapter(bookId, chapter));
 
@@ -326,9 +395,11 @@ const Scriptures = (function () {
 
     navigateHome = function (volumeId) {
         document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({
-            id: "scripnav",
+            id: DIV_SCRIPTURES_NAVIGATOR,
             content: volumesGridContent(volumeId)
         });
+
+        document.getElementById(DIV_BREADCRUMBS).innerHTML = breadcrumbs(volumeForId(volumeId));
     };
 
     // Book ID and chapter must be integers
@@ -462,6 +533,12 @@ const Scriptures = (function () {
         return book.tocName;
     };
 
+    volumeForId = function (volumeId) {
+        if (volumeId !== undefined && volumeId > 0 && volumeId <= volumes.length) {
+            return volumes[volumeId - 1];
+        }
+    };
+
     volumesGridContent = function (volumeId) {
         let gridContent = "";
 
@@ -469,7 +546,7 @@ const Scriptures = (function () {
             if (volumeId === undefined || volumeId === volume.id) {
                 gridContent += htmlDiv({
                     classKey: CLASS_VOLUME,
-                    content: htmlAnchor(volume) + htmlHeader5(volume.fullName)
+                    content: htmlAnchor(volume) + htmlElement(TAG_HEADER5, volume.fullName)
                 });
 
                 gridContent += booksGrid(volume);
@@ -483,6 +560,7 @@ const Scriptures = (function () {
      *                      PUBLIC API
      */
     return {
+        changeHash: changeHash,
         init: init,
         onHashChanged: onHashChanged
     };
