@@ -7,15 +7,18 @@
  *              IS 542, Winter 2019, BYU.
  */
 /*property
-    Animation, DROP, Marker, animation, books, changeHash, classKey,
-    clearTimeout, content, exec, forEach, fullName, getAttribute,
-    getElementById, google, gridName, hash, href, id, init, innerHTML, lat,
-    length, lng, log, map, maps, maxBookId, minBookId, numChapters,
-    onHashChanged, onerror, onload, open, parentBookId, parse, position, push,
-    querySelectorAll, responseText, send, setMap, setTimeout, slice, split,
-    status, substring, title, tocName
+    Animation, DROP, LatLng, LatLngBounds, Marker, abs, align, animation,
+    appendChild, body, books, changeHash, children, classKey, clearTimeout,
+    content, createHTMLDocument, exec, extend, fitBounds, fontColor, fontSize,
+    forEach, fullName, getAttribute, getCenter, getElementById, getPosition,
+    getTitle, google, gridName, hash, href, id, implementation, includes, init,
+    innerHTML, lat, length, lng, log, map, maps, maxBookId, minBookId,
+    numChapters, onHashChanged, onerror, onload, open, panTo, parentBookId,
+    parse, position, push, querySelectorAll, responseText, round, send, setMap,
+    setTimeout, setTitle, setZoom, showLocation, slice, split, status,
+    strokeColor, substring, text, title, tocName
 */
-/*global console, google, map */
+/*global console, google, map, MapLabel */
 /*jslint
     browser: true
     long: true */
@@ -36,6 +39,8 @@ const Scriptures = (function () {
     const INDEX_PLACE_FLAG = 11;
     const LAT_LON_PARSER = /\((.*),'(.*)',(.*),(.*),(.*),(.*),(.*),(.*),(.*),(.*),'(.*)'\)/;
     const MAX_RETRY_DELAY = 5000;
+    const MAX_ZOOM_LEVEL = 18;
+    const MIN_ZOOM_LEVEL = 6;
     const REQUEST_GET = "GET";
     const REQUEST_STATUS_OK = 200;
     const REQUEST_STATUS_ERROR = 400;
@@ -46,13 +51,16 @@ const Scriptures = (function () {
     const URL_BOOKS = "https://scriptures.byu.edu/mapscrip/model/books.php";
     const URL_SCRIPTURES = "https://scriptures.byu.edu/mapscrip/mapgetscrip.php";
     const URL_VOLUMES = "https://scriptures.byu.edu/mapscrip/model/volumes.php";
+    const ZOOM_RATIO = 450;
 
     /*------------------------------------------------------------------------
      *                      PRIVATE VARIABLES
      */
     let books;
+    let gmLabels = [];
     let gmMarkers = [];
     let requestedBreadcrumbs;
+    let requestedNextPrevious;
     let retryDelay = 500;
     let volumes;
 
@@ -77,14 +85,20 @@ const Scriptures = (function () {
     let htmlHashLink;
     let htmlLink;
     let init;
+    let markerIndex;
+    let mergePlacename;
     let navigateBook;
     let navigateChapter;
     let navigateHome;
     let nextChapter;
     let onHashChanged;
+    let parseHtml;
     let previousChapter;
     let setupMarkers;
+    let showLocation;
     let titleForBookChapter;
+    let transitionBreadcrumbs;
+    let transitionScriptures;
     let volumeForId;
     let volumesGridContent;
 
@@ -92,17 +106,32 @@ const Scriptures = (function () {
      *                      PRIVATE METHODS
      */
     addMarker = function (placename, latitude, longitude) {
-        // NEEDSWORK: check to see if we already have this latitude/longitude
-        //   in the gmMarkers array; if so, merge this new placename
+        let index = markerIndex(latitude, longitude);
 
-        let marker = new google.maps.Marker({
-            position: {lat: latitude, lng: longitude},
-            map: map,
-            title: placename,
-            animation: google.maps.Animation.DROP
-        });
+        if (index >= 0) {
+            mergePlacename(placename, index);
+        } else {
+            let marker = new google.maps.Marker({
+                position: {lat: Number(latitude), lng: Number(longitude)},
+                map,
+                title: placename,
+                animation: google.maps.Animation.DROP
+            });
 
-        gmMarkers.push(marker);
+            gmMarkers.push(marker);
+
+            let mapLabel = new MapLabel({
+                text: marker.getTitle(),
+                position: new google.maps.LatLng(Number(latitude), Number(longitude)),
+                map,
+                fontSize: 16,
+                fontColor: "#201000",
+                strokeColor: "#fff8f0",
+                align: "left"
+            });
+
+            gmLabels.push(mapLabel);
+        }
     };
 
     ajax = function (url, successCallback, failureCallback, skipParse) {
@@ -232,6 +261,9 @@ const Scriptures = (function () {
     };
 
     clearMarkers = function () {
+        gmLabels.forEach(function (marker) {
+            marker.setMap(null);
+        });
         gmMarkers.forEach(function (marker) {
             marker.setMap(null);
         });
@@ -257,6 +289,9 @@ const Scriptures = (function () {
 
     getScriptureCallback = function (chapterHtml) {
         document.getElementById(DIV_SCRIPTURES).innerHTML = chapterHtml;
+        document.querySelectorAll(".navheading").forEach(function (element) {
+            element.appendChild(parseHtml(`<div class="nextprev">${requestedNextPrevious}</div>`)[0]);
+        });
         document.getElementById(DIV_BREADCRUMBS).innerHTML = requestedBreadcrumbs;
         setupMarkers();
     };
@@ -334,6 +369,7 @@ const Scriptures = (function () {
                 cacheBooks(callback);
             }
         });
+
         ajax(URL_VOLUMES, function (volumesArray) {
             volumes = volumesArray;
             volumesLoaded = true;
@@ -344,6 +380,37 @@ const Scriptures = (function () {
         });
     };
 
+    markerIndex = function (latitude, longitude) {
+        let i = gmMarkers.length - 1;
+
+        while (i >= 0) {
+            let marker = gmMarkers[i];
+
+            // Note: here is the safe way to compare IEEE floating-point
+            // numbers: compare their difference to a small number
+            if (Math.abs(marker.getPosition().lat() - latitude) < 0.0000001 &&
+                    Math.abs(marker.getPosition().lng() - longitude) < 0.0000001) {
+                return i;
+            }
+
+            i -= 1;
+        }
+
+        return -1;
+    };
+
+    mergePlacename = function (placename, index) {
+        let marker = gmMarkers[index];
+        let label = gmLabels[index];
+        let title = marker.getTitle();
+
+        if (!title.includes(placename)) {
+            title += ", " + placename;
+            marker.setTitle(title);
+            label.text = title;
+        }
+    };
+
     navigateBook = function (bookId) {
         let book = books[bookId];
         let volume;
@@ -352,31 +419,24 @@ const Scriptures = (function () {
             volume = volumeForId(book.parentBookId);
         }
 
-        document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({content: bookId});
-        document.getElementById(DIV_BREADCRUMBS).innerHTML = breadcrumbs(volume, book);
+        if (book.numChapters <= 0) {
+            navigateChapter(book.id, 0);
+        } else if (book.numChapters === 1) {
+            navigateChapter(book.id, 1);
+        } else {
+            let chapter = 1;
+            let navContents = `<div id="${DIV_SCRIPTURES_NAVIGATOR}"><div class="volume"><h5>${book.fullName}</h5></div><div class="books">`;
 
-        /*
-         * NEEDSWORK: generate HTML that looks like this (to use Liddle's styles.css):
-         *
-         * <div id="scripnav">
-         *     <div class="volume"><h5>book.fullName</h5></div>
-         *     <a class="btn chapter" id="1" href="#0:bookId:1">1</a>
-         *     <a class="btn chapter" id="2" href="#0:bookId:2">2</a>
-         *     ...
-         *     <a class="btn chapter" id="49" href="#0:bookId:49">49</a>
-         *     <a class="btn chapter" id="50" href="#0:bookId:50">50</a>
-         * </div>
-         *
-         * (plug in the right strings for book.fullName and bookId in the example above)
-         *
-         * Logic for this method:
-         * 1. Get the book for the given bookId.
-         * 2. If the book has no numbered chapters, call navigateChapter() for
-         *    that book ID and chapter 0.
-         * 3. Else if the book has exactly one chapter, call navigateChapter() for
-         *    that book ID and chapter 1.
-         * 4. Else generate the HTML to match the example above.
-         */
+            while (chapter <= book.numChapters) {
+                navContents += `<a class="btn chapter" id="${chapter}" href="#0:${book.id}:${chapter}">${chapter}</a>`;
+                chapter += 1;
+            }
+
+            navContents += "</div>";
+
+            transitionScriptures(navContents);
+            transitionBreadcrumbs(breadcrumbs(volume, book));
+        }
     };
 
     navigateChapter = function (bookId, chapter) {
@@ -386,8 +446,19 @@ const Scriptures = (function () {
 
             requestedBreadcrumbs = breadcrumbs(volume, book, chapter);
 
-            console.log(nextChapter(bookId, chapter));
-            console.log(previousChapter(bookId, chapter));
+            let nextPrev = previousChapter(bookId, chapter);
+
+            if (nextPrev === undefined) {
+                requestedNextPrevious = "";
+            } else {
+                requestedNextPrevious = `<a href="javascript:void(0);" onclick="Scriptures.changeHash(0, ${nextPrev[0]}, ${nextPrev[1]})" title="${nextPrev[2]}"><i class="material-icons">skip_previous</i></a>`;
+            }
+
+            nextPrev = nextChapter(bookId, chapter);
+
+            if (nextPrev !== undefined) {
+                requestedNextPrevious += `<a href="javascript:void(0);" onclick="Scriptures.changeHash(0, ${nextPrev[0]}, ${nextPrev[1]})" title="${nextPrev[2]}"><i class="material-icons">skip_next</i></a>`;
+            }
 
             ajax(encodedScriptureUrlParameters(bookId, chapter), getScriptureCallback, getScriptureFailed, true);
         }
@@ -471,23 +542,35 @@ const Scriptures = (function () {
         }
     };
 
+    parseHtml = function (html) {
+        let htmlDocument = document.implementation.createHTMLDocument();
+
+        htmlDocument.body.innerHTML = html;
+
+        return htmlDocument.body.children;
+    };
+
     // Book ID and chapter must be integers
     // Returns undefined if there is no previous chapter
     // Otherwise returns an array with the next book ID, chapter, and title
     previousChapter = function (bookId, chapter) {
-        /*
-         * Get the book for the given bookId.  If it's not undefined:
-         *      If chapter > 1, it's the easy case.  Just return same bookId,
-         *          chapter - 1, and the title string for that book/chapter combo.
-         *      Otherwise we need to see if there's a previous book:
-         *          Get the book for bookId - 1.  If it's not undefined:
-         *              Return bookId - 1, the last chapter of that book, and the
-         *                      title string for that book/chapter combo.
-         * If we didn't already return a 3-element array of bookId/chapter/title,
-         *      at this point just drop through to the bottom of the function.  We'll
-         *      return undefined by default, meaning there is no previous chapter.
-         */
-        console.log(bookId, chapter);
+        let book = books[bookId];
+
+        if (book !== undefined) {
+            if (chapter > 1) {
+                return [bookId, chapter - 1, titleForBookChapter(book, chapter - 1)];
+            }
+
+            let previousBook = books[bookId - 1];
+
+            if (previousBook !== undefined) {
+                return [
+                    previousBook.id,
+                    previousBook.numChapters,
+                    titleForBookChapter(previousBook, previousBook.numChapters)
+                ];
+            }
+        }
     };
 
     setupMarkers = function () {
@@ -507,8 +590,10 @@ const Scriptures = (function () {
             clearMarkers();
         }
 
+        let matches;
+
         document.querySelectorAll("a[onclick^=\"showLocation(\"]").forEach(function (element) {
-            let matches = LAT_LON_PARSER.exec(element.getAttribute("onclick"));
+            matches = LAT_LON_PARSER.exec(element.getAttribute("onclick"));
 
             if (matches) {
                 let placename = matches[INDEX_PLACENAME];
@@ -523,6 +608,37 @@ const Scriptures = (function () {
                 addMarker(placename, latitude, longitude);
             }
         });
+
+        if (gmMarkers.length > 0) {
+            if (gmMarkers.length === 1 && matches) {
+                // When there's exactly one marker, add it and zoom to it
+                let zoomLevel = Math.round(Number(matches[9]) / ZOOM_RATIO);
+
+                if (zoomLevel < MIN_ZOOM_LEVEL) {
+                    zoomLevel = MIN_ZOOM_LEVEL;
+                } else if (zoomLevel > MAX_ZOOM_LEVEL) {
+                    zoomLevel = MAX_ZOOM_LEVEL;
+                }
+
+                map.setZoom(zoomLevel);
+                map.panTo(gmMarkers[0].position);
+            } else {
+                let bounds = new google.maps.LatLngBounds();
+
+                gmMarkers.forEach(function (marker) {
+                    bounds.extend(marker.position);
+                });
+
+                map.panTo(bounds.getCenter());
+                map.fitBounds(bounds);
+            }
+        }
+    };
+
+    showLocation = function (id, placename, latitude, longitude, viewLatitude,
+            viewLongitude, viewTilt, viewRoll, viewAltitude, viewHeading) {
+        map.panTo({lat: latitude, lng: longitude});
+        map.setZoom(Math.round(viewAltitude / ZOOM_RATIO));
     };
 
     titleForBookChapter = function (book, chapter) {
@@ -531,6 +647,15 @@ const Scriptures = (function () {
         }
 
         return book.tocName;
+    };
+
+    transitionBreadcrumbs = function (newCrumbs) {
+        document.getElementById(DIV_BREADCRUMBS).innerHTML = newCrumbs;
+    };
+
+    transitionScriptures = function (newContent) {
+        document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({content: newContent});
+        setupMarkers(newContent);
     };
 
     volumeForId = function (volumeId) {
@@ -560,8 +685,9 @@ const Scriptures = (function () {
      *                      PUBLIC API
      */
     return {
-        changeHash: changeHash,
-        init: init,
-        onHashChanged: onHashChanged
+        changeHash,
+        init,
+        onHashChanged,
+        showLocation
     };
 }());
