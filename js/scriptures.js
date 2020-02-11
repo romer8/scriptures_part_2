@@ -109,33 +109,6 @@ let addMarker = function (placename, latitude, longitude) {
     }
 };
 
-let ajax = function (url, successCallback, failureCallback, skipJsonParse) {
-    let request = new XMLHttpRequest();
-
-    request.open(REQUEST_GET, url, true);
-
-    request.onload = function () {
-        if (request.status >= REQUEST_STATUS_OK && request.status < REQUEST_STATUS_ERROR) {
-            const data = (
-                skipJsonParse
-                ? request.responseText
-                : JSON.parse(request.responseText)
-            );
-
-            if (typeof successCallback === "function") {
-                successCallback(data);
-            }
-        } else {
-            if (typeof failureCallback === "function") {
-                failureCallback(request);
-            }
-        }
-    };
-
-    request.onerror = failureCallback;
-    request.send();
-};
-
 let bookChapterValid = function (bookId, chapter) {
     let book = books[bookId];
 
@@ -297,10 +270,6 @@ let getScripturesCallback = function (chapterHtml) {
     setupMarkers();
 };
 
-let getScripturesFailure = function () {
-    console.log("Warning: unable to receive scripture content from server.");
-};
-
 let htmlAnchor = function (volume) {
     return `<a name="v${volume.id}" />`;
 };
@@ -388,23 +357,45 @@ let init = function (onInitializedCallback) {
     let booksLoaded = false;
     let volumesLoaded = false;
 
-    ajax(URL_BOOKS, function (booksObject) {
-        books = booksObject;
-        booksLoaded = true;
+    fetch(URL_BOOKS)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
 
-        if (volumesLoaded) {
-            cacheBooks(onInitializedCallback);
-        }
-    });
+            throw new Error("Unable to retrieve required data from server.");
+        })
+        .then(function (booksObject) {
+            books = booksObject;
+            booksLoaded = true;
 
-    ajax(URL_VOLUMES, function (volumesArray) {
-        volumes = volumesArray;
-        volumesLoaded = true;
+            if (volumesLoaded) {
+                cacheBooks(onInitializedCallback);
+            }
+        })
+        .catch(function (error) {
+            console.log("Error: ", error.message);
+        });
 
-        if (booksLoaded) {
-            cacheBooks(onInitializedCallback);
-        }
-    });
+    fetch(URL_VOLUMES)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
+
+            throw new Error("Unable to retrieve required data from server.");
+        })
+        .then(function (volumesArray) {
+            volumes = volumesArray;
+            volumesLoaded = true;
+
+            if (booksLoaded) {
+                cacheBooks(onInitializedCallback);
+            }
+        })
+        .catch(function (error) {
+            console.log("Error: ", error.message);
+        });
 };
 
 let markerIndex = function (latitude, longitude) {
@@ -480,7 +471,18 @@ let navigateChapter = function (bookId, chapter) {
             requestedNextPrevious += nextPreviousMarkup(nextPrev, ICON_NEXT);
         }
 
-        ajax(encodedScripturesUrlParameters(bookId, chapter), getScripturesCallback, getScripturesFailure, true);
+        fetch(encodedScripturesUrlParameters(bookId, chapter))
+            .then(function (response) {
+                if (response.ok) {
+                    return response.text();
+                }
+
+                throw new Error("Unable to retrieve chapter information from server.");
+            })
+            .then(html => getScripturesCallback(html))
+            .catch(function (error) {
+                console.log("Error: ", error.message);
+            });
     }
 };
 
