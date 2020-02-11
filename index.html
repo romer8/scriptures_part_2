@@ -21,34 +21,34 @@
         <div id="map"></div>
     </div>
     <script>
-        let map;
+        var map;
 
         function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
+            window.map = new google.maps.Map(document.getElementById('map'), {
                 center: {lat: 31.777444, lng: 35.234935},
                 zoom: 8
             });
         }
     </script>
     <script type="module">
-        import("./js/scriptures.js").then(module => {
-            function ready(fn) {
-                if (document.readyState != 'loading') {
-                    fn();
-                } else {
-                    document.addEventListener('DOMContentLoaded', fn);
-                }
+        import {default as Scriptures} from "./js/scriptures.js";
+
+        function ready(fn) {
+            if (document.readyState != 'loading') {
+                fn();
+            } else {
+                document.addEventListener('DOMContentLoaded', fn);
             }
+        }
 
-            // Export to the global object (window) the two methods we need:
-            window.changeHash = module.default.changeHash;
-            window.showLocation = module.default.showLocation;
+        // Export to the global object (window) the two methods we need:
+        window.changeHash = Scriptures.changeHash;
+        window.showLocation = Scriptures.showLocation;
 
-            ready(function () {
-                module.default.init(function () {
-                    window.addEventListener("hashchange", module.default.onHashChanged);
-                    module.default.onHashChanged();
-                });
+        ready(function () {
+            Scriptures.init(function () {
+                window.addEventListener("hashchange", Scriptures.onHashChanged);
+                Scriptures.onHashChanged();
             });
         });
     </script>

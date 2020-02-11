@@ -89,10 +89,10 @@ let addMarker = function (placename, latitude, longitude) {
         gmMarkers.push(marker);
 
         if (!initializedMapLabel) {
-            const initialize = MapLabelInit;
-
-            initialize();
-            initializedMapLabel = true;
+            if (typeof MapLabelInit === "function") {
+                MapLabelInit();
+                initializedMapLabel = true;
+            }
         }
 
         let mapLabel = new MapLabel({

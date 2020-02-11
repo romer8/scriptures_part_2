@@ -42,12 +42,12 @@ function MapLabel(opt_options) {
   this.setValues(opt_options);
 }
 
-let MapLabelRetryDelay = 100;
-let MapLabelMaxRetryDelay = 10000;
+var MapLabelRetryDelay = 100;
+var MapLabelMaxRetryDelay = 10000;
 
-let MapLabelInit = function () {
+var MapLabelInit = function () {
     if (window.google === undefined) {
-        let retryId = window.setTimeout(MapLabelInit, MapLabelRetryDelay);
+        var retryId = window.setTimeout(MapLabelInit, MapLabelRetryDelay);
 
         MapLabelRetryDelay += MapLabelRetryDelay;
 
