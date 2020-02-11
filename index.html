@@ -2,40 +2,25 @@
 <html class="no-js" lang="">
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>The Scriptures, Mapped</title>
-    <meta name="description" content="The Standard Works, Mapped">
-    <meta name="author" content="Stephen W. Liddle">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>The Scriptures Mapped</title>
+    <meta name="author" content="Your Name Here">
 
-    <link rel="manifest" href="site.webmanifest">
-    <link rel="apple-touch-icon" href="icon.png">
-    <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Place favicon.ico in the root directory -->
-
-    <link rel="stylesheet" href="css/styles.css?v=1.0">
-
-    <script src="js/scriptures.js" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!--[if lte IE 9]>
-        <p class="browserupgrade">You are using an <strong>outdated</strong> browser.
-        Please <a href="https://browsehappy.com/">upgrade your browser</a>
-        to improve your experience and security.</p>
-    <![endif]-->
-
     <div id="header">
         <div id="crumbs"></div>
         <div id="centerhead">
-            <div id="title">The Scriptures, Mapped</div>
-            <div id="subtitle">By Stephen W. Liddle</div>
+            <div class="title">The Scriptures, Mapped</div>
+            <div class="subtitle">By Stephen W. Liddle</div>
         </div>
     </div>
     <div id="content">
         <div id="scriptures"></div>
         <div id="map"></div>
     </div>
-    <script type="text/javascript">
+    <script>
         let map;
 
         function initMap() {
@@ -44,32 +29,56 @@
                 zoom: 8
             });
         }
-
-        function ready(eventHandler) {
-            "use strict";
-
-            if (document.attachEvent
-                    ? document.readyState === "complete"
-                    : document.readyState !== "loading") {
-                eventHandler();
-            } else {
-                document.addEventListener("DOMContentLoaded", eventHandler);
+    </script>
+    <script type="module">
+        import("./js/scriptures.js").then(module => {
+            function ready(fn) {
+                if (document.readyState != 'loading') {
+                    fn();
+                } else {
+                    document.addEventListener('DOMContentLoaded', fn);
+                }
             }
-        }
 
-        function showLocation() {
-            Scriptures.showLocation(...arguments);
-        };
+            // Export to the global object (window) the two methods we need:
+            window.changeHash = module.default.changeHash;
+            window.showLocation = module.default.showLocation;
 
-        ready(function () {
-            Scriptures.init(function () {
-                MapLabelInit();
-                window.addEventListener("hashchange", Scriptures.onHashChanged);
-                Scriptures.onHashChanged();
+            ready(function () {
+                module.default.init(function () {
+                    window.addEventListener("hashchange", module.default.onHashChanged);
+                    module.default.onHashChanged();
+                });
             });
         });
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAr33BgbK5Yx6ULqDQiTfsn33f2zVGtUXc&callback=initMap"
+    <!--
+
+
+
+
+
+
+
+
+
+
+
+
+        There be dragons here.
+
+
+
+
+
+
+
+
+
+
+
+      -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&callback=initMap"
             async defer></script>
     <script src="js/maplabel.js" defer></script>
 </body>
