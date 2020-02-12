@@ -152,17 +152,27 @@ div.books a.chapter {
     border: solid 5px;
 }
 
-#crumb ul {
+#crumbs ul {
     padding: 0;
+    padding-left: 1rem;
     margin: 0;
     line-height: 1.0;
 }
 
-#crumb li {
+#crumbs li {
     padding: 0;
     margin: 0;
     list-style: none;
     display: inline-block;
+}
+
+#crumbs li::before {
+    content: ">";
+    padding: .3em;
+}
+
+#crumbs li:first-child::before {
+    display: none;
 }
 
 #header a:link, #header a:visited, #header a:active {
