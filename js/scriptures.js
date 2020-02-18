@@ -66,6 +66,12 @@ let requestedBreadcrumbs;
 let requestedNextPrevious;
 let retryDelay = 500;
 let volumes;
+let actual_hash={
+  pvolume:"none",
+  pbook:"none",
+  pchapter:"none"
+};
+//this will tell us if the acutal volume, book, and chapter, so when the change is done the animation changes as well.
 
 /*------------------------------------------------------------------------
  *                      PRIVATE METHODS
@@ -203,6 +209,7 @@ const changeHash = function (volumeId, bookId, chapter) {
     }
 
     location.hash = newHash;
+
 };
 
 const chaptersGrid = function (book) {
@@ -261,11 +268,27 @@ const encodedScripturesUrlParameters = function (bookId, chapter, verses, isJst)
 };
 
 const getScripturesCallback = function (chapterHtml) {
+  //put the animation entering here,
+  // but put the animation leaving on the change of the hash, so it will not be undefined//
+  //try this and see if it works
+
+
     document.getElementById(DIV_SCRIPTURES).innerHTML = chapterHtml;
     document.querySelectorAll(".navheading").forEach(function (element) {
         element.appendChild(parseHtml(`<div class="nextprev">${requestedNextPrevious}</div>`)[0]);
     });
     document.getElementById(DIV_BREADCRUMBS).innerHTML = requestedBreadcrumbs;
+    let element = document.getElementById("scripturecontent"); // it is a class better to try with div id scriptures
+
+    // ADD THINGS TO MAKE IT TO THE LEFT //
+
+    // console.log(element);
+    // //ADDED TO CREATE ANIMATION TO ENTER//
+    // element.classList.toggle("scripturecontent-view");
+
+
+
+
     setupMarkers();
 };
 
@@ -425,9 +448,23 @@ const mergePlacename = function (placename, index) {
 };
 
 const navigateBook = function (bookId) {
+    let element = document.getElementById("scriptures");
+
+    let op = 0.1; // initial opacity
+    element.style.opacity = op;
+    element.style.display = 'block';
+    let timer = setInterval(function() {
+      if (op >= 1) {
+        clearInterval(timer);
+      }
+      element.style.opacity = op;
+      element.style.filter = 'alpha(opacity=' + op * 100 + ")"; // IE 5+ Support
+      op += op * 0.1;
+    }, 10);
     let book = books[bookId];
     let volume;
-
+    actual_hash.pbook=bookId;
+    console.log(actual_hash.pbook);
     if (book.numChapters <= 1) {
         navigateChapter(book.id, book.numChapters);
     } else {
@@ -445,6 +482,9 @@ const navigateBook = function (bookId) {
 
 const navigateChapter = function (bookId, chapter) {
     if (bookId !== undefined) {
+
+        actual_hash.pchapter=chapter;
+        console.log(actual_hash.pchapter);
         let book = books[bookId];
         let volume = volumes[book.parentBookId - 1];
 
@@ -477,12 +517,27 @@ const navigateChapter = function (bookId, chapter) {
 };
 
 const navigateHome = function (volumeId) {
+    let element = document.getElementById("scriptures");
+
+    let op = 0.1; // initial opacity
+    element.style.opacity = op;
+    element.style.display = 'block';
+    let timer = setInterval(function() {
+      if (op >= 1) {
+        clearInterval(timer);
+      }
+      element.style.opacity = op;
+      element.style.filter = 'alpha(opacity=' + op * 100 + ")"; // IE 5+ Support
+      op += op * 0.1;
+    }, 10);
     document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({
         id: DIV_SCRIPTURES_NAVIGATOR,
         content: volumesGridContent(volumeId)
     });
 
     document.getElementById(DIV_BREADCRUMBS).innerHTML = breadcrumbs(volumeForId(volumeId));
+    actual_hash.pvolume=volumeId;
+    console.log(actual_hash.pvolume);
 };
 
 // Book ID and chapter must be integers
@@ -529,6 +584,8 @@ const nextPreviousMarkup = function (nextPrev, icon) {
 // We're expecting a hash value of the form #volume:book:chapter,
 // where each of the three parameters is optional.
 const onHashChanged = function () {
+    let element = document.getElementById("scriptures");
+
     let ids = [];
 
     if (location.hash !== "" && location.hash.length > 1) {
@@ -536,28 +593,70 @@ const onHashChanged = function () {
     }
 
     if (ids.length <= 0) {
+      // do the fading here //
+
         navigateHome();
     } else if (ids.length === 1) {
         let volumeId = Number(ids[0]);
 
         if (volumeId < volumes[0].id || volumeId > volumes.slice(-1).id) {
+          // do the fading here //
+
             navigateHome();
         } else {
+          // do the fading here //
+
             navigateHome(volumeId);
         }
     } else if (ids.length >= 2) {
         let bookId = Number(ids[1]);
 
         if (books[bookId] === undefined) {
+            // do the fading here //
             navigateHome();
         } else {
             if (ids.length === 2) {
                 navigateBook(bookId);
+                // for the book one we need to add here if something is bigger than 30>1 and the other case 30<1
+
             } else {
                 let chapter = Number(ids[2]);
 
                 if (bookChapterValid(bookId, chapter)) {
+                    // let contenido = Array.from(document.getElementsByClassName("scripturewrapper"))[0];
+                    let contenido = document.getElementById("scriptures");
+
+                    if(actual_hash.pchapter > chapter){
+                      console.log("FROM LEFT TO RIGHT");
+                      // here the animation to leave from left to right//
+                      contenido.animate([
+                        // keyframes
+                            { transform: 'translateX(-100px)' },
+                            { transform: 'translateX(0px)' }
+                            ],
+                            {
+                            // timing options
+                            duration: 200,
+                          });
+                    }
+                    if(actual_hash.pchapter < chapter){
+                      // here the animation to leave from right to left //
+                      console.log("FROM RIGHT TO LEFT");
+                      // here the animation to leave from left to right//
+                      contenido.animate([
+                        // keyframes
+                            { transform: 'translateX(100px)' },
+                            { transform: 'translateX(0px)' }
+                            ],
+                            {
+                            // timing options
+                            duration: 200,
+                          });
+
+                    }
                     navigateChapter(bookId, chapter);
+
+                    //CHANGE THE STYLE TO THE ANIMATION IF IT IS A CHAPTER LESS OR MORE ///
                 } else {
                     navigateHome();
                 }
