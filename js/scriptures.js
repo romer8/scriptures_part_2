@@ -71,6 +71,7 @@ let actual_hash={
   pbook:"none",
   pchapter:"none"
 };
+let slideDirection = true;
 //this will tell us if the acutal volume, book, and chapter, so when the change is done the animation changes as well.
 
 /*------------------------------------------------------------------------
@@ -268,26 +269,46 @@ const encodedScripturesUrlParameters = function (bookId, chapter, verses, isJst)
 };
 
 const getScripturesCallback = function (chapterHtml) {
-  //put the animation entering here,
-  // but put the animation leaving on the change of the hash, so it will not be undefined//
-  //try this and see if it works
-
 
     document.getElementById(DIV_SCRIPTURES).innerHTML = chapterHtml;
+    // document.getElementById("scriptures2").innerHTML = chapterHtml;
     document.querySelectorAll(".navheading").forEach(function (element) {
         element.appendChild(parseHtml(`<div class="nextprev">${requestedNextPrevious}</div>`)[0]);
     });
     document.getElementById(DIV_BREADCRUMBS).innerHTML = requestedBreadcrumbs;
-    let element = document.getElementById("scripturecontent"); // it is a class better to try with div id scriptures
 
-    // ADD THINGS TO MAKE IT TO THE LEFT //
-
-    // console.log(element);
-    // //ADDED TO CREATE ANIMATION TO ENTER//
-    // element.classList.toggle("scripturecontent-view");
-
-
-
+    let contenido = Array.from(document.getElementsByClassName("scripturecontent"))[0];
+    // console.log(contenido);
+    if(slideDirection){
+      contenido.style.visibility = "visible";
+      if(contenido !== undefined){
+        console.log(contenido);
+        contenido.animate([
+          // keyframes
+              { transform: 'translateX(-100%)' },
+              { transform: 'translateX(0px)' }
+              ],
+              {
+              // timing options
+              duration: 300,
+            });
+      }
+    }
+    if(!slideDirection){
+      contenido.style.visibility = "visible";
+      if(contenido !== undefined){
+        console.log(contenido);
+        contenido.animate([
+          // keyframes
+              { transform: 'translateX(100%)' },
+              { transform: 'translateX(0px)' }
+              ],
+              {
+              // timing options
+              duration: 300,
+            });
+      }
+    }
 
     setupMarkers();
 };
@@ -448,19 +469,11 @@ const mergePlacename = function (placename, index) {
 };
 
 const navigateBook = function (bookId) {
-    let element = document.getElementById("scriptures");
+    let contenido =document.getElementById("scripnav");
+    if(contenido !== null){
+      contenido.style.visibility = "hidden";
+    }
 
-    let op = 0.1; // initial opacity
-    element.style.opacity = op;
-    element.style.display = 'block';
-    let timer = setInterval(function() {
-      if (op >= 1) {
-        clearInterval(timer);
-      }
-      element.style.opacity = op;
-      element.style.filter = 'alpha(opacity=' + op * 100 + ")"; // IE 5+ Support
-      op += op * 0.1;
-    }, 10);
     let book = books[bookId];
     let volume;
     actual_hash.pbook=bookId;
@@ -482,7 +495,11 @@ const navigateBook = function (bookId) {
 
 const navigateChapter = function (bookId, chapter) {
     if (bookId !== undefined) {
-
+        let contenido =  Array.from(document.getElementsByClassName("scripturecontent"))[0]
+        if(contenido !== undefined){
+          console.log("hidden");
+          contenido.style.visibility = "hidden";
+        }
         actual_hash.pchapter=chapter;
         console.log(actual_hash.pchapter);
         let book = books[bookId];
@@ -503,7 +520,7 @@ const navigateChapter = function (bookId, chapter) {
         if (nextPrev !== undefined) {
             requestedNextPrevious += nextPreviousMarkup(nextPrev, ICON_NEXT);
         }
-
+        // contenido.style.visibility = "hidden";
         fetch(encodedScripturesUrlParameters(bookId, chapter)).then(function (response) {
             if (response.ok) {
                 return response.text();
@@ -547,6 +564,7 @@ const nextChapter = function (bookId, chapter) {
     let book = books[bookId];
 
     if (book !== undefined) {
+
         if (chapter < book.numChapters) {
             return [
                 bookId,
@@ -616,45 +634,90 @@ const onHashChanged = function () {
             navigateHome();
         } else {
             if (ids.length === 2) {
-                navigateBook(bookId);
-                // for the book one we need to add here if something is bigger than 30>1 and the other case 30<1
+                let element = document.getElementById("scripnav");
+                console.log(element);
+                if(element !== null){
+                  // let element = document.getElementById("scriptures");
+                  var op = 1;  // initial opacity
+                  var timer = setInterval(function () {
+                     if (op <= 0.1){
+                         clearInterval(timer);
+                         element.style.visibility = "hidden";
+                         console.log(" I am fading out fro");
+                     }
+                     element.style.opacity = op;
+                     element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                     op -= op * 0.1;
+                  }, 40);
+
+                }
+
+                setTimeout(function(){
+                    navigateBook(bookId);
+                },1500);
 
             } else {
                 let chapter = Number(ids[2]);
 
                 if (bookChapterValid(bookId, chapter)) {
                     // let contenido = Array.from(document.getElementsByClassName("scripturewrapper"))[0];
-                    let contenido = document.getElementById("scriptures");
+                    // let contenido = document.getElementById("scripturecontent");
+                    // console.log(contenido);
 
-                    if(actual_hash.pchapter > chapter){
-                      console.log("FROM LEFT TO RIGHT");
-                      // here the animation to leave from left to right//
-                      contenido.animate([
-                        // keyframes
-                            { transform: 'translateX(-100px)' },
-                            { transform: 'translateX(0px)' }
-                            ],
-                            {
-                            // timing options
-                            duration: 200,
-                          });
-                    }
-                    if(actual_hash.pchapter < chapter){
-                      // here the animation to leave from right to left //
-                      console.log("FROM RIGHT TO LEFT");
-                      // here the animation to leave from left to right//
-                      contenido.animate([
-                        // keyframes
-                            { transform: 'translateX(100px)' },
-                            { transform: 'translateX(0px)' }
-                            ],
-                            {
-                            // timing options
-                            duration: 200,
-                          });
 
+                    let contenido = Array.from(document.getElementsByClassName("scripturecontent"))[0];
+
+                    if(contenido !== undefined){
+                      // let contenido = Array.from(document.getElementsByClassName("scripturecontent"))[0];
+                      console.log(contenido);
+                      //
+                      if(actual_hash.pchapter > chapter){
+                        slideDirection = false;
+                        console.log("FROM LEFT TO RIGHT");
+                        // here the animation to leave from left to right//
+
+                        contenido.animate([
+                          // keyframes
+                              { transform: 'translateX(0)' },
+                              { transform: 'translateX(-100%)' }
+                              ],
+                              {
+                              // timing options
+                              duration: 300,
+                            });
+                      }
+                      if(actual_hash.pchapter < chapter){
+                        slideDirection = true;
+                        // here the animation to leave from right to left //
+                        console.log("FROM RIGHT TO LEFT");
+                        // here the animation to leave from left to right//
+                        contenido.animate([
+                          // keyframes
+                              { transform: 'translateX(0)' },
+                              { transform: 'translateX(100%)' }
+                              ],
+                              {
+                              // timing options
+                              duration: 300,
+                            });
+                      }
+                      // contenido.animate([
+                      //   // keyframes
+                      //       { transform: 'translateX(0px)' },
+                      //       { transform: 'translateX(100%)' }
+                      //       ],
+                      //       {
+                      //       // timing options
+                      //       duration: 300,
+                      //     });
                     }
-                    navigateChapter(bookId, chapter);
+
+                      // navigateChapter(bookId, chapter);
+                    // contenido.style.visibility = "hidden";
+
+                    setTimeout(function(){
+                        navigateChapter(bookId, chapter);
+                    },300);
 
                     //CHANGE THE STYLE TO THE ANIMATION IF IT IS A CHAPTER LESS OR MORE ///
                 } else {
@@ -778,8 +841,27 @@ const transitionBreadcrumbs = function (newCrumbs) {
 };
 
 const transitionScriptures = function (newContent) {
+
     document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({content: newContent});
+    let element = document.getElementById("scripnav");
+    var op = 0.1;  // initial opacity
+    // element.style.visibility="hidden";
+    // element.style.display = 'block';
+    element.style.opacity = op;
+    element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+    var timer = setInterval(function () {
+        if (op >= 1){
+            clearInterval(timer);
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op += op * 0.1;
+    }, 40);
+
     setupMarkers(newContent);
+    // animation to fade new content in  // I guess ///
+
+
 };
 
 const volumeForId = function (volumeId) {

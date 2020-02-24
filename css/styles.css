@@ -23,7 +23,7 @@ img {
     top: 0;
     left: 0;
     right: 0;
-    background-color: #3f2000;
+    background-color: #030238;
     color: white;
     height: 56px;
     display: flex;
@@ -86,30 +86,10 @@ div.subtitle {
     overflow-y: auto;
     border-right: 1px solid #aaa;
     position: relative;
-    /* animation: 1s slide-right 1s forwards; */
-    /* transform:translateX(-100%); */
+    background-color: black;
+    color:white;
+
 }
-
-
-
-/* .scripturecontent{
-  animation: 0.1s slide-right 0.1s forwards;
-  transform:translateX(0%);
-} */
-/* @keyframes slide-right {
-  to {
-    transform:translateX(0);
-  }
-} */
-
-/* .scripturecontent-view{
-  transform:translateX(0);
-}
-.scripturecontent-first{
-  transition: 1s;
-  left: 0;
-} */
-
 
 #scripnav {
     position: absolute;
@@ -143,8 +123,8 @@ div.books a {
     margin: .4em;
     padding-left: .5em;
     padding-right: .5em;
-    background-color: #fff;
-    color: #222;
+    background-color: #330238;
+    color: #1b967c;
 }
 
 div.books a.chapter {
@@ -174,6 +154,9 @@ div.books a.chapter {
     background-color: rgb(255, 255, 255);
     border: solid 5px;
 }
+/* .books .btn {
+  background-color: #330238;
+} */
 
 #crumbs ul {
     padding: 0;
@@ -196,6 +179,15 @@ div.books a.chapter {
 
 #crumbs li:first-child::before {
     display: none;
+}
+#crumbs ul li:hover {
+    font-size: 110%;
+    margin: 0.6em, 0;
+    transition-property: font-size;
+    transition-duration: 350ms;
+    transition-timing-function: ease-in-out;
+    color: white;
+    box-shadow: 2px 2px 1px navy;
 }
 
 #header a:link, #header a:visited, #header a:active {
@@ -228,7 +220,8 @@ div.text {
     font-family: Georgia, 'Times New Roman', Times, serif;
     font-size: 12pt;
     font-weight: normal;
-    background-color: white;
+    background-color: black;
+    color: white;
     padding-bottom: 3rem;
 }
 
@@ -277,7 +270,7 @@ span.verse {
 }
 
 .scripturewrapper li a:link, .scripturewrapper li a:visited, .scripturewrapper li a:active {
-    color: #44b;
+    color: #ff44b1;
     text-decoration: none;
 }
 
@@ -287,7 +280,7 @@ span.verse {
 }
 
 .navheading a:link, .navheading a:visited, .navheading a:active {
-    color: #222;
+    color: #49b869;
     text-decoration: none;
 }
 
