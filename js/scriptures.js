@@ -1,6 +1,6 @@
 /*============================================================================
  * FILE:    scriptures.js
- * AUTHOR:  Stephen W. Liddle
+ * AUTHOR:  Elkin Giovanni Romero
  * DATE:    Winter 2020
  *
  * DESCRIPTION: Front-end JavaScript code for The Scriptures, Mapped.
@@ -16,8 +16,11 @@
     maps, maxBookId, message, minBookId, numChapters, ok, onHashChanged,
     onclick, panTo, parentBookId, position, push, querySelectorAll, round,
     setMap, setTimeout, setTitle, setZoom, showLocation, slice, split,
-    strokeColor, text, then, title, tocName
+    strokeColor, text, then, title, tocName, pvolume, pchapter, pbook, from,
+    getElementsByClassName, style, visibility, animate, transform, duration
+
 */
+
 /*global console, google, map, MapLabel, MapLabelInit */
 /*jslint
     browser: true
@@ -283,8 +286,8 @@ const getScripturesCallback = function (chapterHtml) {
       if(contenido !== undefined){
         contenido.animate([
           // keyframes
-              { transform: 'translateX(-100%)' },
-              { transform: 'translateX(0px)' }
+              { transform: "translateX(100%)" },
+              { transform: "translateX(0px)" }
               ],
               {
               // timing options
@@ -297,8 +300,8 @@ const getScripturesCallback = function (chapterHtml) {
       if(contenido !== undefined){
         contenido.animate([
           // keyframes
-              { transform: 'translateX(100%)' },
-              { transform: 'translateX(0px)' }
+              { transform: "translateX(-100%)" },
+              { transform: "translateX(0px)" }
               ],
               {
               // timing options
@@ -543,13 +546,13 @@ const navigateHome = function (volumeId) {
     var op = 0.1;  // initial opacity
     if(element !== null){
     element.style.opacity = op;
-    element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+    element.style.filter = "alpha(opacity=" + op * 100 + ")";
     var timer = setInterval(function () {
         if (op >= 1){
             clearInterval(timer);
         }
         element.style.opacity = op;
-        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        element.style.filter = "alpha(opacity=" + op * 100 + ")";
         op += op * 0.1;
     }, 40);
   }
@@ -621,7 +624,7 @@ const onHashChanged = function () {
                  console.log(" I am fading out fro");
              }
              element.style.opacity = op;
-             element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+             element.style.filter = "alpha(opacity=" + op * 100 + ")";
              op -= op * 0.1;
           }, 40);
 
@@ -646,7 +649,7 @@ const onHashChanged = function () {
                      console.log(" I am fading out fro");
                  }
                  element.style.opacity = op;
-                 element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                 element.style.filter = "alpha(opacity=" + op * 100 + ")";
                  op -= op * 0.1;
               }, 40);
 
@@ -666,7 +669,7 @@ const onHashChanged = function () {
                      element.style.visibility = "hidden";
                  }
                  element.style.opacity = op;
-                 element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                 element.style.filter = "alpha(opacity=" + op * 100 + ")";
                  op -= op * 0.1;
               }, 40);
 
@@ -690,7 +693,7 @@ const onHashChanged = function () {
                      element.style.visibility = "hidden";
                  }
                  element.style.opacity = op;
-                 element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                 element.style.filter = "alpha(opacity=" + op * 100 + ")";
                  op -= op * 0.1;
               }, 40);
 
@@ -710,7 +713,7 @@ const onHashChanged = function () {
                          element.style.visibility = "hidden";
                      }
                      element.style.opacity = op;
-                     element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                     element.style.filter = "alpha(opacity=" + op * 100 + ")";
                      op -= op * 0.1;
                   }, 40);
 
@@ -735,8 +738,8 @@ const onHashChanged = function () {
 
                         contenido.animate([
                           // keyframes
-                              { transform: 'translateX(0)' },
-                              { transform: 'translateX(-100%)' }
+                              { transform: "translateX(0)" },
+                              { transform: "translateX(100%)" }
                               ],
                               {
                               // timing options
@@ -750,8 +753,8 @@ const onHashChanged = function () {
                         // here the animation to leave from left to right//
                         contenido.animate([
                           // keyframes
-                              { transform: 'translateX(0)' },
-                              { transform: 'translateX(100%)' }
+                              { transform: "translateX(0)" },
+                              { transform: "translateX(-100%)" }
                               ],
                               {
                               // timing options
@@ -778,7 +781,7 @@ const onHashChanged = function () {
                            console.log(" I am fading out fro");
                        }
                        element.style.opacity = op;
-                       element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                       element.style.filter = "alpha(opacity=" + op * 100 + ")";
                        op -= op * 0.1;
                     }, 40);
 
@@ -911,13 +914,13 @@ const transitionScriptures = function (newContent) {
     var op = 0.1;  // initial opacity
 
     element.style.opacity = op;
-    element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+    element.style.filter = "alpha(opacity=" + op * 100 + ")";
     var timer = setInterval(function () {
         if (op >= 1){
             clearInterval(timer);
         }
         element.style.opacity = op;
-        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        element.style.filter = "alpha(opacity=" + op * 100 + ")";
         op += op * 0.1;
     }, 40);
 
