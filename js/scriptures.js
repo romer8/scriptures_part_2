@@ -749,7 +749,6 @@ const onHashChanged = function () {
                       if(actual_hash.pchapter < chapter){
                         slideDirection = true;
                         // here the animation to leave from right to left //
-                        console.log("FROM RIGHT TO LEFT");
                         // here the animation to leave from left to right//
                         contenido.animate([
                           // keyframes
