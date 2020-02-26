@@ -278,11 +278,9 @@ const getScripturesCallback = function (chapterHtml) {
     document.getElementById(DIV_BREADCRUMBS).innerHTML = requestedBreadcrumbs;
 
     let contenido = Array.from(document.getElementsByClassName("scripturecontent"))[0];
-    // console.log(contenido);
     if(slideDirection){
       contenido.style.visibility = "visible";
       if(contenido !== undefined){
-        console.log(contenido);
         contenido.animate([
           // keyframes
               { transform: 'translateX(-100%)' },
@@ -297,7 +295,6 @@ const getScripturesCallback = function (chapterHtml) {
     if(!slideDirection){
       contenido.style.visibility = "visible";
       if(contenido !== undefined){
-        console.log(contenido);
         contenido.animate([
           // keyframes
               { transform: 'translateX(100%)' },
@@ -477,7 +474,6 @@ const navigateBook = function (bookId) {
     let book = books[bookId];
     let volume;
     actual_hash.pbook=bookId;
-    console.log(actual_hash.pbook);
     if (book.numChapters <= 1) {
         navigateChapter(book.id, book.numChapters);
     } else {
@@ -534,19 +530,7 @@ const navigateChapter = function (bookId, chapter) {
 };
 
 const navigateHome = function (volumeId) {
-    let element = document.getElementById("scriptures");
 
-    let op = 0.1; // initial opacity
-    element.style.opacity = op;
-    element.style.display = 'block';
-    let timer = setInterval(function() {
-      if (op >= 1) {
-        clearInterval(timer);
-      }
-      element.style.opacity = op;
-      element.style.filter = 'alpha(opacity=' + op * 100 + ")"; // IE 5+ Support
-      op += op * 0.1;
-    }, 10);
     document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({
         id: DIV_SCRIPTURES_NAVIGATOR,
         content: volumesGridContent(volumeId)
@@ -554,7 +538,21 @@ const navigateHome = function (volumeId) {
 
     document.getElementById(DIV_BREADCRUMBS).innerHTML = breadcrumbs(volumeForId(volumeId));
     actual_hash.pvolume=volumeId;
-    console.log(actual_hash.pvolume);
+    let element =document.getElementById("scripnav");
+
+    var op = 0.1;  // initial opacity
+    if(element !== null){
+    element.style.opacity = op;
+    element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+    var timer = setInterval(function () {
+        if (op >= 1){
+            clearInterval(timer);
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op += op * 0.1;
+    }, 40);
+  }
 };
 
 // Book ID and chapter must be integers
@@ -602,7 +600,7 @@ const nextPreviousMarkup = function (nextPrev, icon) {
 // We're expecting a hash value of the form #volume:book:chapter,
 // where each of the three parameters is optional.
 const onHashChanged = function () {
-    let element = document.getElementById("scriptures");
+    // let element = document.getElementById("scriptures");
 
     let ids = [];
 
@@ -612,30 +610,97 @@ const onHashChanged = function () {
 
     if (ids.length <= 0) {
       // do the fading here //
+        let element = document.getElementById("scripnav");
+        if(element !== null){
+          // let element = document.getElementById("scriptures");
+          var op = 1;  // initial opacity
+          var timer = setInterval(function () {
+             if (op <= 0.1){
+                 clearInterval(timer);
+                 element.style.visibility = "hidden";
+                 console.log(" I am fading out fro");
+             }
+             element.style.opacity = op;
+             element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+             op -= op * 0.1;
+          }, 40);
 
-        navigateHome();
+        }
+        setTimeout(function(){
+          navigateHome();
+        },1500);
+
     } else if (ids.length === 1) {
         let volumeId = Number(ids[0]);
 
         if (volumeId < volumes[0].id || volumeId > volumes.slice(-1).id) {
           // do the fading here //
+            let element = document.getElementById("scripnav");
+            if(element !== null){
+              // let element = document.getElementById("scriptures");
+              var op = 1;  // initial opacity
+              var timer = setInterval(function () {
+                 if (op <= 0.1){
+                     clearInterval(timer);
+                     element.style.visibility = "hidden";
+                     console.log(" I am fading out fro");
+                 }
+                 element.style.opacity = op;
+                 element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                 op -= op * 0.1;
+              }, 40);
 
-            navigateHome();
+            }
+            setTimeout(function(){
+              navigateHome();
+            },1500);
         } else {
           // do the fading here //
+            let element = document.getElementById("scripnav");
+            if(element !== null){
+              // let element = document.getElementById("scriptures");
+              var op = 1;  // initial opacity
+              var timer = setInterval(function () {
+                 if (op <= 0.1){
+                     clearInterval(timer);
+                     element.style.visibility = "hidden";
+                 }
+                 element.style.opacity = op;
+                 element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                 op -= op * 0.1;
+              }, 40);
 
-            navigateHome(volumeId);
+            }
+            setTimeout(function(){
+              navigateHome(volumeId);
+            },1500);
         }
     } else if (ids.length >= 2) {
         let bookId = Number(ids[1]);
 
         if (books[bookId] === undefined) {
             // do the fading here //
-            navigateHome();
+            let element = document.getElementById("scripnav");
+            if(element !== null){
+              // let element = document.getElementById("scriptures");
+              var op = 1;  // initial opacity
+              var timer = setInterval(function () {
+                 if (op <= 0.1){
+                     clearInterval(timer);
+                     element.style.visibility = "hidden";
+                 }
+                 element.style.opacity = op;
+                 element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                 op -= op * 0.1;
+              }, 40);
+
+            }
+            setTimeout(function(){
+              navigateHome();
+            },1500);
         } else {
             if (ids.length === 2) {
                 let element = document.getElementById("scripnav");
-                console.log(element);
                 if(element !== null){
                   // let element = document.getElementById("scriptures");
                   var op = 1;  // initial opacity
@@ -643,7 +708,6 @@ const onHashChanged = function () {
                      if (op <= 0.1){
                          clearInterval(timer);
                          element.style.visibility = "hidden";
-                         console.log(" I am fading out fro");
                      }
                      element.style.opacity = op;
                      element.style.filter = 'alpha(opacity=' + op * 100 + ")";
@@ -660,20 +724,13 @@ const onHashChanged = function () {
                 let chapter = Number(ids[2]);
 
                 if (bookChapterValid(bookId, chapter)) {
-                    // let contenido = Array.from(document.getElementsByClassName("scripturewrapper"))[0];
-                    // let contenido = document.getElementById("scripturecontent");
-                    // console.log(contenido);
-
 
                     let contenido = Array.from(document.getElementsByClassName("scripturecontent"))[0];
 
                     if(contenido !== undefined){
-                      // let contenido = Array.from(document.getElementsByClassName("scripturecontent"))[0];
-                      console.log(contenido);
-                      //
+
                       if(actual_hash.pchapter > chapter){
                         slideDirection = false;
-                        console.log("FROM LEFT TO RIGHT");
                         // here the animation to leave from left to right//
 
                         contenido.animate([
@@ -701,19 +758,9 @@ const onHashChanged = function () {
                               duration: 300,
                             });
                       }
-                      // contenido.animate([
-                      //   // keyframes
-                      //       { transform: 'translateX(0px)' },
-                      //       { transform: 'translateX(100%)' }
-                      //       ],
-                      //       {
-                      //       // timing options
-                      //       duration: 300,
-                      //     });
+
                     }
 
-                      // navigateChapter(bookId, chapter);
-                    // contenido.style.visibility = "hidden";
 
                     setTimeout(function(){
                         navigateChapter(bookId, chapter);
@@ -721,7 +768,24 @@ const onHashChanged = function () {
 
                     //CHANGE THE STYLE TO THE ANIMATION IF IT IS A CHAPTER LESS OR MORE ///
                 } else {
+                  let element = document.getElementById("scripnav");
+                  if(element !== null){
+                    var op = 1;  // initial opacity
+                    var timer = setInterval(function () {
+                       if (op <= 0.1){
+                           clearInterval(timer);
+                           element.style.visibility = "hidden";
+                           console.log(" I am fading out fro");
+                       }
+                       element.style.opacity = op;
+                       element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                       op -= op * 0.1;
+                    }, 40);
+
+                  }
+                  setTimeout(function(){
                     navigateHome();
+                  },1500);
                 }
             }
         }
@@ -845,8 +909,7 @@ const transitionScriptures = function (newContent) {
     document.getElementById(DIV_SCRIPTURES).innerHTML = htmlDiv({content: newContent});
     let element = document.getElementById("scripnav");
     var op = 0.1;  // initial opacity
-    // element.style.visibility="hidden";
-    // element.style.display = 'block';
+
     element.style.opacity = op;
     element.style.filter = 'alpha(opacity=' + op * 100 + ")";
     var timer = setInterval(function () {
